@@ -61,6 +61,58 @@ class SortableGroupTest extends BaseTestCaseORM
         $this->em->remove($audi80);
         $this->em->flush();
     }
+    
+    /**
+     * @test
+     */
+    public function shouldInsertAtZero()
+    {
+        $this->populate();
+        
+        $carRepo = $this->em->getRepository(self::CAR);
+
+        // theres only 1 v6 so this should be position:0
+        $audiJet = $carRepo->findOneByTitle('Audi-jet');
+        $this->assertEquals(0, $audiJet->getSortByEngine());
+
+    }
+    
+    /**
+     * @test
+     */
+    public function shouldBeAbleToChangeGroup()
+    {
+        $this->populate();
+        $carRepo = $this->em->getRepository(self::CAR);
+
+        // position 0
+        $audi80 = $carRepo->findOneByTitle('Audi-80');
+
+        //position 1
+        $audi80s = $carRepo->findOneByTitle('Audi-80s');
+
+        //position 2
+        $icarus = $this->em->getRepository(self::BUS)->findOneByTitle('Icarus');
+        
+        // theres only 1 v6 so this should be position:0
+        $audiJet = $carRepo->findOneByTitle('Audi-jet');
+        
+        // change engines
+        $v6engine = $this->em->getRepository(self::ENGINE)->findOneByType('V6');
+        
+        // lets change group
+        $audi80s->setEngine($v6engine);
+
+        $this->em->persist($audi80s);
+        $this->em->flush();
+        
+        // Audi-80s should go after the v6
+        $this->assertEquals(1, $audi80s->getSortByEngine());
+        
+        // Icarus should move to replace moved Audi-80s
+        $this->assertEquals(1, $icarus->getSortByEngine());
+        
+    }
 
     protected function getUsedEntityFixtures()
     {
@@ -82,7 +134,7 @@ class SortableGroupTest extends BaseTestCaseORM
 
         $v6 = new Engine;
         $v6->setType('V6');
-        $v6->setValves(8);
+        $v6->setValves(6);
         $this->em->persist($v6);
         $this->em->flush();
 
